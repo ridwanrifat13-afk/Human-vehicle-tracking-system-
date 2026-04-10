@@ -65,7 +65,7 @@ class TrackerUI:
             text_color = (0, 0, 0) if selected else (0, 0, 0)
             cv2.rectangle(overlay, (x1, y1), (x2, y2), color, 2)
             cx, cy = (x1 + x2) // 2, (y1 + y2) // 2
-            cv2.circle(overlay, (cx, cy), 3, color, -1)
+            cv2.circle(overlay, (cx, cy), 5, color, -1)
             cv2.rectangle(overlay, (x1, label_y1), (x1 + text_size[0] + 10, label_y2), bg_color, -1)
             cv2.rectangle(overlay, (x1, label_y1), (x1 + text_size[0] + 10, label_y2), border_color, 1)
             cv2.putText(overlay, label, (x1 + 5, label_y2 - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, text_color, 1)
