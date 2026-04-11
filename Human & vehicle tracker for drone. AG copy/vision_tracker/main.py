@@ -1,7 +1,8 @@
+
 import logging
 import time
 
-from config.settings import FRAME_HEIGHT, FRAME_RATE, FRAME_WIDTH, WINDOW_TITLE
+from config.settings import VIDEO_SOURCE, FRAME_HEIGHT, FRAME_RATE, FRAME_WIDTH, WINDOW_TITLE
 from control.null_controller import NullController
 from detection.yolo_detector import YOLODetector
 from prediction.kalman_filter import KalmanFilterPredictor
@@ -26,7 +27,19 @@ def main():
         video_source.start()
         logger.info("Webcam source started")
 
+        predictions = []
         last_time = time.time()
+
+        ui.update_camera_status(
+            camera_name=f"Camera {VIDEO_SOURCE}",
+            connected=False,
+            resolution=f"{FRAME_WIDTH}x{FRAME_HEIGHT}",
+            fps=0.0,
+            neural_link="Initialising",
+            detection_engine="YOLOv8n",
+        )
+        ui.update_drone_status(altitude="N/A", longitude="N/A", battery="N/A", connection="Disconnected")
+        ui.update_system_status("Ready", "Awaiting frames")
 
         while not ui.closed:
             frame = video_source.read_frame()
@@ -35,6 +48,12 @@ def main():
                 break
 
             start_time = time.time()
+            if ui.paused:
+                ui.update_system_status("Paused", "Tracking suspended")
+                ui.render(frame, predictions, 0.0)
+                last_time = time.time()
+                continue
+
             detections = detector.detect(frame)
             tracks = tracker.update(detections, frame_rate=FRAME_RATE)
             dt = max(1.0 / FRAME_RATE, time.time() - last_time)
@@ -44,6 +63,16 @@ def main():
                 controller.send_target_position(*track["prediction"])
 
             fps = 1.0 / max(1e-6, time.time() - start_time)
+            ui.update_camera_status(
+                camera_name=f"Camera {VIDEO_SOURCE}",
+                connected=True,
+                resolution=f"{FRAME_WIDTH}x{FRAME_HEIGHT}",
+                fps=fps,
+                neural_link="Active",
+                detection_engine="YOLOv8n",
+            )
+            ui.update_drone_status(altitude="N/A", longitude="N/A", battery="N/A", connection="Disconnected")
+            ui.update_system_status("Tracking", "Operational")
             ui.render(frame, predictions, fps)
             last_time = time.time()
 
